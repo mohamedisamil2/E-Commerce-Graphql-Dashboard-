@@ -2,6 +2,9 @@ import express from "express";
 import { ApolloServer } from "@apollo/server";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import { schema } from "./graphql/schema.ts";
+import { expressMiddleware } from "@as-integrations/express5";
+import { createContext } from "./middleware/auth.ts";
 
 
 
@@ -9,21 +12,17 @@ import cors from "cors";
 export async function createApp() {
     
     const app = express();
-   const typeDefs = `#graphql
-  type Query {
-    hello: String!
-  }
-`;
-
-const resolvers = {
-  Query: {
-    hello: () => "Server is working!",
-  },
-};
+  
 
 const apolloServer = new ApolloServer({
-  typeDefs,
-  resolvers,
+    schema,
+    csrfPrevention: {
+        requestHeaders: ["x-apollo-operation-name", "apollo-require-preflight", "authorization"],
+    },
+    formatError: (formattedError, error) => {
+        console.error(error)
+        return formattedError;
+    }
 });
 
     await apolloServer.start();
@@ -35,6 +34,7 @@ const apolloServer = new ApolloServer({
             credentials: true,
         }),
         express.json(),
+        expressMiddleware(apolloServer, { context: async({req, res}) => createContext({req, res})}),
     );
 
     return app;
