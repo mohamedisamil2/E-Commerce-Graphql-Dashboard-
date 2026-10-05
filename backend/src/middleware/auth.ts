@@ -1,4 +1,4 @@
-import { jwtVerify } from "jose";
+import { errors, jwtVerify } from "jose";
 import type { Request, Response } from "express";
 
 export interface AuthUser{
@@ -41,7 +41,9 @@ export async function createContext({ req, res }: { req: Request, res: Response 
             res,
         }
     } catch (error) {
-        return { user: null, tokenError: "invalid", req, res };
+         const tokenError = error instanceof errors.JWTExpired ? "expired" : "invalid";
+          console.log("token verify failed:", (error as Error).name); // مؤقت
+        return { user: null, tokenError, req, res };
     }
     
     
